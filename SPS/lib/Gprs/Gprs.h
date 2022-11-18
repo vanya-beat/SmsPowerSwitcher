@@ -33,7 +33,7 @@
 #define __GPRS_SHIELD_ARDUINO_H__
 
 #include "sim900.h"
-
+#include "Pdu.h"
 /** GPRS class.
  *  used to realize GPRS communication
  */
@@ -80,8 +80,17 @@ public:
      */
     void powerOn();
     void powerOff();
-
+    void endData();
     /** send text SMS
+     *  @param  *number phone number which SMS will be send to
+     *  @param  *data   message that will be send to
+     *  @returns
+     *      false on success
+     *      true on error
+     */
+    bool sendSMS_PDU(char *number, char *data);
+
+        /** send text SMS
      *  @param  *number phone number which SMS will be send to
      *  @param  *data   message that will be send to
      *  @returns
@@ -96,7 +105,6 @@ public:
      *      -1 on error
      *       0 - there is no SMS with specified status (UNREAD)
      */
-
     char isSMSunread();
 
     /** read SMS, phone and date if getting a SMS message. It changes SMS status to READ
@@ -128,6 +136,7 @@ public:
      *      false on error
      */
     void readSMS();
+    void readSMS(char *buffer, int size);
 
     bool deleteSMS(int index);
 
@@ -283,5 +292,6 @@ private:
     static GPRS *inst;
     uint32_t _ip;
     char ip_string[16]; //XXX.YYY.ZZZ.WWW + \0
+    PDUMessageEncoder pdu_encoder;
 };
 #endif

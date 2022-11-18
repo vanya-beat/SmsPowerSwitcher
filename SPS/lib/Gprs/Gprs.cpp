@@ -77,6 +77,10 @@ bool GPRS::init(void)
     {
         return false;
     }
+    if (!sim900_check_with_cmd("AT+CNMI=1,2,0,0,0\r\n", "OK\r\n", CMD))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -111,7 +115,14 @@ void GPRS::powerOff()
     digitalWrite(_pkPin, LOW);
     delay(3000);
 }
-
+void GPRS::endData(){
+        delay(500);
+    sim900_send_End_Mark();
+    sim900_send_End_Mark();
+    sim900_send_End_Mark();
+    delay(500);
+    sim900_send_End_Mark();
+}
 bool GPRS::checkSIMStatus(void)
 {
     char gprsBuffer[32];
@@ -156,6 +167,23 @@ bool GPRS::sendSMS(char *number, char *data)
     sim900_send_cmd(data);
     delay(500);
     sim900_send_End_Mark();
+    return true;
+}
+
+bool GPRS::sendSMS_PDU(char *number, char *data){
+    PDUOutgoingMessage message = pdu_encoder.Encode(String(number), String(data), false);
+    if (!sim900_check_with_cmd("AT+CMGF=0\r\n", "OK\r\n", CMD))
+    {
+        return false;
+    }
+    delay(500); 
+    String header = String("AT+CMGS=") + String(message.MessageLength) + String("\x0D");
+    sim900_send_cmd(header.c_str());
+    delay(1000);
+    sim900_send_cmd(message.Message.c_str());
+    delay(500);
+    sim900_send_cmd("\x1A");
+    sim900_send_cmd("\x0d");
     return true;
 }
 
@@ -335,6 +363,12 @@ void GPRS::readSMS()
     sim900_clean_buffer(gprsBuffer, sizeof(gprsBuffer));
     sim900_read_buffer(gprsBuffer, sizeof(gprsBuffer), DEFAULT_TIMEOUT);
     Serial.write(gprsBuffer);
+}
+
+void GPRS::readSMS(char *buffer, int size)
+{
+    sim900_clean_buffer(buffer, size);
+    sim900_read_buffer(buffer, size, DEFAULT_TIMEOUT);
 }
 
 bool GPRS::deleteSMS(int index)
